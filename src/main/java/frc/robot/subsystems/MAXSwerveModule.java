@@ -19,6 +19,7 @@ import com.revrobotics.RelativeEncoder;
 import frc.robot.Constants.ModuleConstants;
 
 public class MAXSwerveModule {
+    // Represents an individual swerve module, including motor and PID control.
   private final CANSparkMax m_drivingSparkMax;
   private final CANSparkMax m_turningSparkMax;
 
@@ -42,7 +43,9 @@ public class MAXSwerveModule {
    */
   public MAXSwerveModule(int drivingCANId, int turningCANId, double chassisAngularOffset) {
     m_drivingSparkMax = new CANSparkMax(drivingCANId, MotorType.kBrushless);
+    // Motor controllers for driving and turning the swerve module.
     m_turningSparkMax = new CANSparkMax(turningCANId, MotorType.kBrushless);
+    // Motor controllers for driving and turning the swerve module.
 
     // Factory reset, so we get the SPARKS MAX to a known state before configuring
     // them. This is useful in case a SPARK MAX is swapped out.
@@ -53,7 +56,9 @@ public class MAXSwerveModule {
     m_drivingEncoder = m_drivingSparkMax.getEncoder();
     m_turningEncoder = m_turningSparkMax.getAbsoluteEncoder(Type.kDutyCycle);
     m_drivingPIDController = m_drivingSparkMax.getPIDController();
+    // PID controllers for fine-tuned control of driving and turning.
     m_turningPIDController = m_turningSparkMax.getPIDController();
+    // PID controllers for fine-tuned control of driving and turning.
     m_drivingPIDController.setFeedbackDevice(m_drivingEncoder);
     m_turningPIDController.setFeedbackDevice(m_turningEncoder);
 
@@ -93,8 +98,6 @@ public class MAXSwerveModule {
         ModuleConstants.kDrivingMaxOutput);
 
     // Set the PID gains for the turning motor. Note these are example gains, and
-    // you
-    // may need to tune them for your own robot!
     m_turningPIDController.setP(ModuleConstants.kTurningP);
     m_turningPIDController.setI(ModuleConstants.kTurningI);
     m_turningPIDController.setD(ModuleConstants.kTurningD);
@@ -110,7 +113,9 @@ public class MAXSwerveModule {
     // Save the SPARK MAX configurations. If a SPARK MAX browns out during
     // operation, it will maintain the above configurations.
     m_drivingSparkMax.burnFlash();
+    // Save configurations to persistent memory to ensure settings persist after reboot.
     m_turningSparkMax.burnFlash();
+    // Save configurations to persistent memory to ensure settings persist after reboot.
 
     m_chassisAngularOffset = chassisAngularOffset;
     m_desiredState.angle = new Rotation2d(m_turningEncoder.getPosition());
@@ -139,8 +144,6 @@ public class MAXSwerveModule {
    * @return The current position of the module.
    */
   public SwerveModulePosition getPosition() {
-    // Apply chassis angular offset to the encoder position to get the position
-    // relative to the chassis.
     return new SwerveModulePosition(
         m_drivingEncoder.getPosition(),
         new Rotation2d(m_turningEncoder.getPosition() - m_chassisAngularOffset));
@@ -152,6 +155,7 @@ public class MAXSwerveModule {
    * @param desiredState Desired state with speed and angle.
    */
   public void setDesiredState(SwerveModuleState desiredState) {
+    // Updates the desired speed and angle for this swerve module.
     // Apply chassis angular offset to the desired state.
     SwerveModuleState correctedDesiredState = new SwerveModuleState();
     correctedDesiredState.speedMetersPerSecond = desiredState.speedMetersPerSecond;
@@ -170,6 +174,7 @@ public class MAXSwerveModule {
 
   /** Zeroes all the SwerveModule encoders. */
   public void resetEncoders() {
+    // Resets the encoder readings to zero.
     m_drivingEncoder.setPosition(0);
   }
 
