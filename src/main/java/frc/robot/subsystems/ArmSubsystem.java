@@ -1,171 +1,119 @@
+// ArmSubsystem.java
 package frc.robot.subsystems;
 
-import frc.robot.Constants;
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import com.revrobotics.RelativeEncoder;
 import frc.robot.Constants.ArmConstants;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import com.revrobotics.CANSparkMax;
-import com.revrobotics.RelativeEncoder;
-import com.revrobotics.CANSparkBase.IdleMode;
-import com.revrobotics.CANSparkLowLevel.MotorType;
-//import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class ArmSubsystem extends SubsystemBase {
+    // Subsystem for controlling the robot's arm, used for note deflection and endgame climbing.
 
-    /** Creates a new Arm motor system. */
+    // Define motor controllers for the left and right arm motors.
+    private final CANSparkMax leftArmMotor = new CANSparkMax(ArmConstants.kLeftArmMotorCanId, MotorType.kBrushless);
+    private final CANSparkMax rightArmMotor = new CANSparkMax(ArmConstants.kRightArmMotorCanId, MotorType.kBrushless);
 
-    private CANSparkMax leftArmMotor = new CANSparkMax(Constants.ArmConstants.kLeftArmCanId, MotorType.kBrushless);
-    private CANSparkMax rightArmMotor = new CANSparkMax(Constants.ArmConstants.kRightArmCanId, MotorType.kBrushless);
-
-    private static ArmSubsystem instance;
-
-    // Encoders
-    private RelativeEncoder leftArmEncoder = leftArmMotor.getEncoder();
-    private RelativeEncoder rightArmEncoder = rightArmMotor.getEncoder();
-
-    private float speed = 0.85f;
-    private double value;
+    // Encoders for tracking the position of the left and right arm motors.
+    private final RelativeEncoder leftEncoder = leftArmMotor.getEncoder();
+    private final RelativeEncoder rightEncoder = rightArmMotor.getEncoder();
 
     public ArmSubsystem() {
-        // create a new SPARK MAX for each arm motor and configure them
+        // Reset motors to factory defaults for consistency and safety.
         leftArmMotor.restoreFactoryDefaults();
         rightArmMotor.restoreFactoryDefaults();
 
-        // Resetting the encoder postion on robot startup
+        // Set inversion and idle modes for motors as defined in ArmConstants.
+        leftArmMotor.setInverted(ArmConstants.kLeftArmInverted);
+        rightArmMotor.setInverted(ArmConstants.kRightArmInverted);
+        leftArmMotor.setIdleMode(ArmConstants.kArmIdleMode);
+        rightArmMotor.setIdleMode(ArmConstants.kArmIdleMode);
 
-        rightArmMotor.setInverted(ArmConstants.kRightArmMotorInverted);
-        leftArmMotor.setInverted(ArmConstants.kLeftArmMotorInverted);
-        rightArmMotor.setInverted(ArmConstants.kRightArmMotorInverted);
-        leftArmMotor.setInverted(ArmConstants.kLeftArmMotorInverted);
-        rightArmMotor.setInverted(ArmConstants.kRightArmMotorInverted);
-        leftArmMotor.setInverted(ArmConstants.kLeftArmMotorInverted);
-        rightArmMotor.setSmartCurrentLimit(Constants.ArmConstants.kArmMotorCurrentLimit);
-        leftArmMotor.setSmartCurrentLimit(Constants.ArmConstants.kArmMotorCurrentLimit);
-        rightArmMotor.setIdleMode(IdleMode.kBrake);
-        leftArmMotor.setIdleMode(IdleMode.kBrake);
-
-        leftArmEncoder.setPosition(0);
-        rightArmEncoder.setPosition(0);
-
-        rightArmMotor.burnFlash();
+        // Save motor configurations to non-volatile memory.
         leftArmMotor.burnFlash();
+        rightArmMotor.burnFlash();
 
+        // Reset encoder values to 0.0 for initial calibration.
+        resetEncoders();
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    @Override
-    public void periodic() {
-        // This method will be called once per scheduler run
-        // int num = (int) (value * 100);
-        // String percent = String.valueOf(num);
-        // SmartDashboard.putString("Arm Motors Speed", percent + "%");
-        // SmartDashboard.putNumber("Left Arm Encoder Position",
-        // getLeftEncoderPosition());
-        // SmartDashboard.putNumber("Right Arm Encoder Position",
-        // getRightEncoderPosition());
-        // SmartDashboard.putNumber("Average Arm Encoder Postion",
-        // getAverageArmEncoderDistance());
-    }
-
-    // Returns an instance of this subsystem
-    public static ArmSubsystem getInstance() {
-        if (instance == null) {
-            instance = new ArmSubsystem();
-        }
-        return instance;
-    }
-
-    // Resets the encoders position to 0.0
+    // Resets both arm motor encoders to a position of 0.0.
     public void resetEncoders() {
-        leftArmEncoder.setPosition(0.0);
-        rightArmEncoder.setPosition(0.0);
+        leftEncoder.setPosition(0.0);
+        rightEncoder.setPosition(0.0);
     }
 
-    // Returns the left arm encoder position
+    // Returns the position of the left arm encoder.
     public double getLeftEncoderPosition() {
-        return leftArmEncoder.getPosition();
+        return leftEncoder.getPosition();
     }
 
-    // Returns the right arm encoder position
+    // Returns the position of the right arm encoder.
     public double getRightEncoderPosition() {
-        return rightArmEncoder.getPosition();
+        return rightEncoder.getPosition();
     }
 
-    // Returns the average encoder distance of left and right encoders
+    // Calculates and returns the average position of the left and right arm encoders.
     public double getAverageArmEncoderDistance() {
-        return ((getLeftEncoderPosition() + getRightEncoderPosition()) / 2.0);
+        return (getLeftEncoderPosition() + getRightEncoderPosition()) / 2.0;
     }
 
-    // Returns true when the encoder right arm is at it's limit
-    public boolean getRightTriggerLimit() {
-        return ((leftArmEncoder.getPosition() > 63.5) ||
-                (rightArmEncoder.getPosition() > 63.5));
-    }
-
-    // Returns true when the encoder left arm is at it's limit
-    public boolean getLeftTriggerLimit() {
-        return ((leftArmEncoder.getPosition() < 2) ||
-                (rightArmEncoder.getPosition() < 2));
-    }
-
-    // Controls arm movement based on trigger inputs
-    public void moveArm(double leftTrigger, double rightTrigger) {
-        this.value = value;
-
-        if (getLeftTriggerLimit()) {
-            leftTrigger = 0;
-        } else if (getRightTriggerLimit()) {
-            rightTrigger = 0;
-        }
-
-        if (leftTrigger != 0) {
-            value = leftTrigger;
-        } else if (rightTrigger != 0) {
-            value = rightTrigger;
+    // Moves the arm based on input trigger values, stopping movement at defined limits.
+    public void moveArm(double forwardTrigger, double reverseTrigger) {
+        if (forwardTrigger > 0.1) {
+            if (getAverageArmEncoderDistance() < ArmConstants.kArmForwardLimit) {
+                leftArmMotor.set(ArmConstants.kArmSpeed);
+                rightArmMotor.set(ArmConstants.kArmSpeed);
+            } else {
+                stopArm(); // Stop if the arm reaches the forward limit.
+            }
+        } else if (reverseTrigger > 0.1) {
+            if (getAverageArmEncoderDistance() > ArmConstants.kArmReverseLimit) {
+                leftArmMotor.set(-ArmConstants.kArmSpeed);
+                rightArmMotor.set(-ArmConstants.kArmSpeed);
+            } else {
+                stopArm(); // Stop if the arm reaches the reverse limit.
+            }
         } else {
-            value = 0;
+            stopArm(); // Stop the arm if no trigger is pressed.
         }
-
-        rightArmMotor.set(value);
-        leftArmMotor.set(value);
     }
 
-    // Spins the arm motors forwards
+    // Spins both arm motors forward at a preset speed.
     public void armForward() {
-        leftArmMotor.set(-speed);
-        rightArmMotor.set(-speed);
+        leftArmMotor.set(ArmConstants.kArmSpeed);
+        rightArmMotor.set(ArmConstants.kArmSpeed);
     }
 
-    // Spins the arm motors in reverse
+    // Spins both arm motors in reverse at a preset speed.
     public void armReverse() {
-        leftArmMotor.set(speed);
-        rightArmMotor.set(speed);
+        leftArmMotor.set(-ArmConstants.kArmSpeed);
+        rightArmMotor.set(-ArmConstants.kArmSpeed);
     }
 
-    // Stops the arm motors
+    // Stops both arm motors.
     public void stopArm() {
         leftArmMotor.set(0.0);
         rightArmMotor.set(0.0);
     }
 
-    // Auto method to extend the arm out
+    // Autonomous method to extend the arm out to a predefined position.
     public boolean autoArmOut() {
         resetEncoders();
-        while ((leftArmEncoder.getPosition() <= 65) || (rightArmEncoder.getPosition() <= 65)) {
+        while (getAverageArmEncoderDistance() < ArmConstants.kAutoArmForwardLimit) {
             armForward();
         }
         stopArm();
-        return true;
+        return true; // Indicate the task is complete.
     }
 
-    // Auto method to extend the arm in
+    // Autonomous method to retract the arm back to its starting position.
     public boolean autoArmIn() {
         resetEncoders();
-        while ((leftArmEncoder.getPosition() >= 0) || (rightArmEncoder.getPosition() >= 0)) {
+        while (getAverageArmEncoderDistance() > ArmConstants.kAutoArmReverseLimit) {
             armReverse();
         }
         stopArm();
-        return true;
+        return true; // Indicate the task is complete.
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
