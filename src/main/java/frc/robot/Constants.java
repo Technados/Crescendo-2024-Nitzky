@@ -57,6 +57,24 @@ public final class Constants {
     public static final IdleMode kRightShooterIdleMode = IdleMode.kBrake;
   }
 
+public final class LimelightConstants {
+    // Limelight physical properties
+    public static final double kMountingAngle = 30.0; // Angle in degrees of the Limelight relative to the horizontal
+    public static final double kTargetHeightDifference = 2.5; // Difference in meters between Limelight and target
+
+    // Aiming and Ranging Tolerances
+    public static final double kAimTolerance = 1.0; // Tolerance for tx alignment in degrees
+    public static final double kAimSpeed = 0.2; // Speed for robot rotation during aiming
+
+    // LED Modes (from Limelight documentation)
+    public static final int kLEDOn = 3;
+    public static final int kLEDOff = 1;
+    public static final int kLEDBlink = 2;
+
+    // Pipelines (optional)
+    public static final int kDefaultPipeline = 0;
+}
+
   public static final class DriveConstants {
     // Driving Parameters - Note that these are not the maximum capable speeds of
     // the robot, rather the allowed maximum speeds
