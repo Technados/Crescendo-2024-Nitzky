@@ -19,18 +19,18 @@ import frc.robot.subsystems.IntakeSubsystem;
 
 public class IntakeCommand extends CommandBase {
     private final IntakeSubsystem intakeSubsystem;
-    private final double speed;
+    private final double targetCurrent;
 
-    public IntakeCommand(IntakeSubsystem intakeSubsystem, double speed) {
+    public IntakeCommand(IntakeSubsystem intakeSubsystem, double targetCurrent) {
         this.intakeSubsystem = intakeSubsystem;
-        this.speed = speed;
+        this.targetCurrent = targetCurrent;
         addRequirements(intakeSubsystem);
     }
 
     @Override
     public void initialize() {
-        // Start the intake motor
-        intakeSubsystem.runIntake(speed);
+        // Run the intake motor at the specified current
+        intakeSubsystem.runIntakeAtCurrent(targetCurrent);
     }
 
     @Override

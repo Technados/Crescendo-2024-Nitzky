@@ -61,42 +61,23 @@ import frc.robot.commands.IntakeNote;
 public class RobotContainer {
 
         // The robot's subsystems
-        private final DriveSubsystem m_robotDrive = new DriveSubsystem();
 
-        private final IntakeSubsystem m_intake = new IntakeSubsystem();
+	private final DriveSubsystem m_robotDrive = new DriveSubsystem();
+	private final IntakeSubsystem m_intake = new IntakeSubsystem();
+	private final ShooterSubsystem m_shooter = new ShooterSubsystem();
+	private final ArmSubsystem m_arm = new ArmSubsystem();
+	private final LimelightSubsystem m_limelight = new LimelightSubsystem();
+	private final LEDSubsystem m_led = new LEDSubsystem();
 
-        private final ShooterSubsystem m_shooter = new ShooterSubsystem();
-
-        // private final ShooterSubsystem m_lob = new ShooterSubsystem();
-
-        private final ArmSubsystem m_arm = new ArmSubsystem();
-
-        // private final LEDSubsystem m_led = new LEDSubsystem();
-
-        // private final VisionSubsystem m_cam = new VisionSubsystem();
 
         // Commands
-        private final ArmControlCommand m_armControlCommand = new ArmControlCommand(m_arm);
+	
+	private final IntakeCommand forwardIntakeCommand = new IntakeCommand(m_intake, 20.0); // Forward at 20 amps
+	private final IntakeCommand reverseIntakeCommand = new IntakeCommand(m_intake, -20.0); // Reverse at 20 amps;
+	private final ShooterCommand shooterCommand = new ShooterCommand(m_shooter, 4000); // Target RPM
+	private final ArmCommand armCommand = new ArmCommand(m_arm, 50.0); // Example position
+	private final LimelightCommand limelightCommand = new LimelightCommand(m_limelight, m_robotDrive);
 
-        private final IntakeNote intakeNoteCommand = new IntakeNote(m_intake);
-
-        private final AmpArm ampArmCommand = new AmpArm(m_arm);
-
-        private final ArmHome armHomeCommand = new ArmHome(m_arm);
-
-        private final ScoreSpeaker scoreSpeakerCommand = new ScoreSpeaker(m_shooter);
-
-        private final StartIntake startIntakeCommand = new StartIntake(m_intake);
-
-        private final StopIntake stopIntakeCommand = new StopIntake(m_intake);
-
-        private final StartShooter startShooterCommand = new StartShooter(m_shooter);
-
-        private final StopShooter stopShooterCommand = new StopShooter(m_shooter);
-
-        private final LobShooter lobShooterCommand = new LobShooter(m_shooter);
-
-        private final ShootSpeakerGroup shootSpeakerParallelGroup = new ShootSpeakerGroup(m_intake, m_shooter);
 
         // create autoChooser
         private final SendableChooser<String> autoChooser = new SendableChooser<>();
@@ -115,24 +96,24 @@ public class RobotContainer {
         // Left Bumper -
         // Right Bumper - Hold to brake (locks wheels in 'X' pattern to prevent
         // movement)
-        // Button A -
+        // Button A - while held, engages the auto aim and range feature.  Return to normal drive when released
         // Button B -
         // Button X -
         // Button Y -
-        // Start Button - Zero Robot Heading (resets forward)
+        // Start Button - Zero Robot Heading (manually resets forward for field relative if heading is off)
         // **********************************************************
 
         // **********************************************************
         // Xbox Controller - 2/Operator - Port 1
         // ----------------------------------------------------------
-        // Left Trigger - Move arm in (back to stow)
-        // Right Trigger - Move arm out (open)
-        // Left Bumper - Reverse intake
-        // Right Bumper - Intake
-        // Button A - Start shooter wheels
+        // Left Trigger - While held, Move arm in (back to stow)
+        // Right Trigger - while held, Move arm out (open)
+        // Left Bumper - while held, Reverse intake
+        // Right Bumper - while held, Forward Intake
+        // Button A - while held, Start shooter wheels
         // Button B -
-        // Button X - Deploy arm to 'stow' rest position
-        // Button Y - Deploy arm to amp scoring position
+        // Button X - Deploy arm to 'stow' min position
+        // Button Y - Deploy arm to amp max position
         // **********************************************************
 
         // The driver's controller
@@ -311,29 +292,24 @@ public class RobotContainer {
         // is selected in the driver station--
         // If the alliance chosen is NOT BLUE - the pathplanner path will flip to red
         // using the .flipPath() method
-        public Command getAutonomousCommand() {
 
-                if (autoChooser.getSelected() == null) {
-                        return null;
-                }
+	public Command getAutonomousCommand() {
+   	 if (autoChooser.getSelected() == null) {
+        return null;
+    	}
 
-                // If Alliance is blue reset odometry to the starting pose of the file
-                if (DriverStation.getAlliance().get() == DriverStation.Alliance.Blue) {
-                        m_robotDrive.resetOdometry(
-                                        PathPlannerAuto.getStaringPoseFromAutoFile(autoChooser.getSelected()));
-                }
+    	Pose2d startingPose = PathPlannerAuto.getStaringPoseFromAutoFile(autoChooser.getSelected());
+    	if (DriverStation.getAlliance() == DriverStation.Alliance.Blue) {
+        m_robotDrive.resetOdometry(startingPose);
+    	} else {
+        Translation2d flippedTranslation = GeometryUtil.flipFieldPosition(startingPose.getTranslation());
+        Rotation2d flippedRotation = GeometryUtil.flipFieldRotation(startingPose.getRotation());
+        m_robotDrive.resetOdometry(new Pose2d(flippedTranslation, flippedRotation));
+   	 }
 
-                // Else retrieve the starting pose of the file and flip it to the red side
-                else {
-                        Pose2d startingPose = PathPlannerAuto.getStaringPoseFromAutoFile(autoChooser.getSelected());
-                        Translation2d translation = GeometryUtil.flipFieldPosition(startingPose.getTranslation());
-                        Rotation2d rotation = GeometryUtil.flipFieldRotation(startingPose.getRotation());
-                        m_robotDrive.resetOdometry(new Pose2d(translation.getX(), translation.getY(), rotation));
-                }
+    	return AutoBuilder.buildAuto(autoChooser.getSelected());
+}
 
-                return AutoBuilder.buildAuto(autoChooser.getSelected());
-
-        }
 
         // public Command getAutonomousCommand() {
         // return autoChooser.getSelected();

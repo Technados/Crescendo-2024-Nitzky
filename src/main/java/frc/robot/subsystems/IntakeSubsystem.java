@@ -69,6 +69,12 @@ public class IntakeSubsystem extends SubsystemBase {
         intakeMotor.set(speed);
     }
 
+    public void runIntakeAtCurrent(double targetCurrent) {
+        intakeMotor.setSmartCurrentLimit((int) targetCurrent);
+        intakeMotor.set(1.0); // Run motor at full speed with current limit
+    }
+
+
     public void stopIntake() {
         intakeMotor.set(0.0);
     }
