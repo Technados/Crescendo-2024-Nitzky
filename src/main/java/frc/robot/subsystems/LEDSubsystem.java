@@ -31,28 +31,27 @@ package frc.robot.subsystems;
  * - Maintained driver feedback functionality with enhanced flexibility and readability.
  */
 
-import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.utils.LimelightHelpers;
 
 public class LEDSubsystem extends SubsystemBase {
     private final Spark blinkin;
-    private final DigitalInput hasNote;
+    private final IntakeSubsystem intakeSubsystem;
+
     private boolean noteDetected = false;
 
-    public LEDSubsystem() {
+    public LEDSubsystem(IntakeSubsystem intakeSubsystem) {
         // Initialize hardware
         blinkin = new Spark(2); // PWM Port for LED controller
-        hasNote = new DigitalInput(0); // DIO Port for IR sensor
+        this.intakeSubsystem = intakeSubsystem;
     }
 
     @Override
     public void periodic() {
-        // Update LED pattern based on IR sensor
-        if (isNoteDetected()) {
+        // Update LED pattern based on game piece detection
+        if (intakeSubsystem.isGamePieceDetected()) {
             setLEDGreen();
         } else {
             setLEDRainbow();
@@ -63,28 +62,15 @@ public class LEDSubsystem extends SubsystemBase {
         SmartDashboard.putString("LED Pattern", noteDetected ? "Green" : "Rainbow");
     }
 
-    public boolean isNoteDetected() {
-        // Check if the IR beam is interrupted
-        boolean detected = !hasNote.get(); // Assuming 'false' means interrupted
-        if (detected && !noteDetected) {
-            flashLimelight();
-        }
-        noteDetected = detected;
-        return detected;
-    }
-
     public void setLEDGreen() {
-        // Set LED pattern to green
-        blinkin.set(0.77);
+        blinkin.set(0.77); // Green pattern
     }
 
     public void setLEDRainbow() {
-        // Set LED pattern to rainbow
-        blinkin.set(-0.87);
+        blinkin.set(-0.87); // Rainbow pattern
     }
 
     public void flashLimelight() {
-        // Non-blocking Limelight blink
         new Thread(() -> {
             double start = Timer.getFPGATimestamp();
             LimelightHelpers.setLEDMode_ForceBlink("limelight");

@@ -126,6 +126,10 @@ public final class LimelightConstants {
     public static final boolean kRightArmMotorInverted = false;
     public static final int kArmMotorCurrentLimit = 40;
 
+    public static final double kArmMaxPosition = 10;
+    public static final double kArmMinPosition = 0;
+
+
     public static final double kSoftLimitReverse = -1.15;
     public static final double kSoftLimitForward = 0.0;
 

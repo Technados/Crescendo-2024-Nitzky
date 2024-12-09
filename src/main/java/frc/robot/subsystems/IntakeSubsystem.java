@@ -29,27 +29,31 @@ package frc.robot.subsystems;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.RelativeEncoder;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class IntakeSubsystem extends SubsystemBase {
     private final CANSparkMax intakeMotor;
     private final RelativeEncoder intakeEncoder;
+    private final DigitalInput irSensor; // IR sensor for game piece detection
 
     public IntakeSubsystem() {
         // Initialize motor
         intakeMotor = new CANSparkMax(Constants.IntakeConstants.kIntakeMotorCanId, MotorType.kBrushless);
         intakeEncoder = intakeMotor.getEncoder();
 
+        // Initialize IR sensor
+        irSensor = new DigitalInput(0); // Example: DIO port 0
+
         // Configure motor settings
         intakeMotor.restoreFactoryDefaults();
         intakeMotor.setInverted(false);
         intakeMotor.setIdleMode(Constants.IntakeConstants.kIntakeIdleMode);
-        intakeMotor.setSmartCurrentLimit(30); // Example current limit (adjust based on testing)
-        intakeMotor.enableVoltageCompensation(12.0); // Maintain consistent performance
+        intakeMotor.setSmartCurrentLimit(30);
+        intakeMotor.enableVoltageCompensation(12.0);
         intakeMotor.burnFlash();
 
-        // Reset encoder on startup
         resetEncoders();
     }
 
@@ -58,36 +62,27 @@ public class IntakeSubsystem extends SubsystemBase {
         // Update telemetry
         SmartDashboard.putNumber("Intake Encoder Position", getEncoderPosition());
         SmartDashboard.putNumber("Intake Motor Current", intakeMotor.getOutputCurrent());
+        SmartDashboard.putBoolean("Game Piece Detected", isGamePieceDetected());
     }
 
     public void runIntake(double speed) {
-        // Run the intake motor at a given speed
         intakeMotor.set(speed);
     }
 
     public void stopIntake() {
-        // Stop the intake motor
         intakeMotor.set(0.0);
     }
 
     public void resetEncoders() {
-        // Reset encoder position
         intakeEncoder.setPosition(0);
     }
 
     public double getEncoderPosition() {
-        // Get current encoder position
         return intakeEncoder.getPosition();
     }
 
-    public boolean autoIntake(double targetPosition) {
-        // Example autonomous intake logic (non-blocking implementation)
-        if (getEncoderPosition() < targetPosition) {
-            runIntake(0.8); // Example speed
-            return false; // Intake still in progress
-        } else {
-            stopIntake();
-            return true; // Intake complete
-        }
+    public boolean isGamePieceDetected() {
+        // Check if the IR sensor beam is interrupted
+        return !irSensor.get(); // Assuming 'false' indicates a beam interruption
     }
 }

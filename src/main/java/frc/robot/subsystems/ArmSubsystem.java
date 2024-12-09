@@ -103,4 +103,15 @@ public class ArmSubsystem extends SubsystemBase {
         leftArmEncoder.setPosition(0.0);
         rightArmEncoder.setPosition(0.0);
     }
+
+    public void moveArmManually(double speed) {
+    	double currentPosition = getLeftEncoderPosition();
+    	if ((speed > 0 && currentPosition < MAX_POSITION) || (speed < 0 && currentPosition > MIN_POSITION)) {
+        leftArmMotor.set(speed);
+        rightArmMotor.set(speed);
+        } else {
+          stopArm();
+    }
+}
+
 }

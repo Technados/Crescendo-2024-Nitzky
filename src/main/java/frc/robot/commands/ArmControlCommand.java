@@ -1,43 +1,50 @@
+/**
+ * ArmCommand
+ *
+ * This command moves the robot's arm to a specific position using PID control. 
+ * It works with the ArmSubsystem and ensures the arm stops once it reaches the 
+ * desired target position or is interrupted.
+ *
+ * **Key Features:**
+ * - Uses the ArmSubsystem's `setArmPosition()` method to move the arm.
+ * - Automatically ends when the arm is within a defined tolerance of the target position.
+ * - Stops the arm if the command is interrupted.
+ *
+ * **Adjustable Values:**
+ * - Position tolerance can be adjusted to fine-tune the precision of the arm's movement.
+ */
+
 package frc.robot.commands;
 
-import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.RobotContainer;
+import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.subsystems.ArmSubsystem;
 
-public class ArmControlCommand extends Command {
-    /** Creates a new ArmControlCommand. */
-    ArmSubsystem ArmSubsystem;
-    double value = 0;
+public class ArmCommand extends CommandBase {
+    private final ArmSubsystem armSubsystem;
+    private final double targetPosition;
 
-    public ArmControlCommand(ArmSubsystem ArmSubsystem) {
-        this.ArmSubsystem = ArmSubsystem;
-        addRequirements(ArmSubsystem);
+    public ArmCommand(ArmSubsystem armSubsystem, double targetPosition) {
+        this.armSubsystem = armSubsystem;
+        this.targetPosition = targetPosition;
+        addRequirements(armSubsystem);
     }
 
-    // Called when the command is initially scheduled.
     @Override
     public void initialize() {
-        System.out.println("Starting arm control command");
+        // Set the arm to the desired position
+        armSubsystem.setArmPosition(targetPosition);
     }
 
-    // Called every time the scheduler runs while the command is scheduled.
-    @Override
-    public void execute() {
-        double leftTrigger = RobotContainer.m_operatorController.getLeftTriggerAxis()
-                * -0.5;
-        double rightTrigger = RobotContainer.m_operatorController.getRightTriggerAxis() * 0.5;
-        value = 0;
-        ArmSubsystem.moveArm(leftTrigger, rightTrigger);
-    }
-
-    // Called once the command ends or is interrupted.
-    @Override
-    public void end(boolean interrupted) {
-    }
-
-    // Returns true when the command should end.
     @Override
     public boolean isFinished() {
-        return false;
+        // Check if the arm is within the tolerance range of the target position
+        return Math.abs(armSubsystem.getLeftEncoderPosition() - targetPosition) < 1.0; // Adjust tolerance here
+    }
+
+    @Override
+    public void end(boolean interrupted) {
+        if (interrupted) {
+            armSubsystem.stopArm(); // Stop the arm if interrupted
+        }
     }
 }
