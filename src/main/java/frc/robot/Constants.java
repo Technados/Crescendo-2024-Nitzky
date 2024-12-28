@@ -55,6 +55,8 @@ public final class Constants {
 
     public static final int kRightShooterMotorCanId = 10;
     public static final IdleMode kRightShooterIdleMode = IdleMode.kBrake;
+
+    public static final int kShooterMotorCurrentLimit = 20;
   }
 
 public final class LimelightConstants {

@@ -27,10 +27,11 @@ package frc.robot.subsystems;
  * - Added telemetry for real-time monitoring of arm position and motor performance.
  */
 
+import frc.robot.Constants;
 import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import com.revrobotics.CANSparkLowLevel.MotorType;
 import com.revrobotics.RelativeEncoder;
-import com.revrobotics.SparkMaxPIDController;
+import com.revrobotics.SparkPIDController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -39,8 +40,8 @@ public class ArmSubsystem extends SubsystemBase {
     private final CANSparkMax rightArmMotor;
     private final RelativeEncoder leftArmEncoder;
     private final RelativeEncoder rightArmEncoder;
-    private final SparkMaxPIDController leftPIDController;
-    private final SparkMaxPIDController rightPIDController;
+    private final SparkPIDController leftPIDController;
+    private final SparkPIDController rightPIDController;
 
     private static final double kP = 0.1, kI = 0.0, kD = 0.0, kFF = 0.0;
 
@@ -60,7 +61,7 @@ public class ArmSubsystem extends SubsystemBase {
         resetEncoders();
     }
 
-    private void configureMotor(CANSparkMax motor, SparkMaxPIDController pidController) {
+    private void configureMotor(CANSparkMax motor, SparkPIDController pidController) {
         motor.restoreFactoryDefaults();
         motor.setSmartCurrentLimit(Constants.ArmConstants.kArmMotorCurrentLimit);
         motor.setIdleMode(CANSparkMax.IdleMode.kBrake);
@@ -106,7 +107,7 @@ public class ArmSubsystem extends SubsystemBase {
 
     public void moveArmManually(double speed) {
     	double currentPosition = getLeftEncoderPosition();
-    	if ((speed > 0 && currentPosition < MAX_POSITION) || (speed < 0 && currentPosition > MIN_POSITION)) {
+    	if ((speed > 0 && currentPosition < Constants.ArmConstants.kArmMaxPosition) || (speed < 0 && currentPosition > Constants.ArmConstants.kArmMinPosition)) {
         leftArmMotor.set(speed);
         rightArmMotor.set(speed);
         } else {

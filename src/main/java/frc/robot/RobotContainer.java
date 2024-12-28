@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.XboxController.Button;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -33,24 +34,16 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import frc.robot.Constants.OIConstants;
 import frc.robot.subsystems.ArmSubsystem;
 import frc.robot.subsystems.DriveSubsystem;
-//import frc.robot.subsystems.VisionSubsystem;
+import frc.robot.subsystems.LimelightSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
-//import frc.robot.subsystems.LEDSubsystem;
-import frc.robot.commands.ArmControlCommand;
-import frc.robot.commands.ArmHome;
-import frc.robot.commands.AmpArm;
-import frc.robot.commands.ScoreSpeaker;
-import frc.robot.commands.ShootSpeakerGroup;
-import frc.robot.commands.StartIntake;
-import frc.robot.commands.StartShooter;
-import frc.robot.commands.StopIntake;
-import frc.robot.commands.StopShooter;
-import frc.robot.commands.LobShooter;
-import frc.robot.hijackablemovement.AprilTagLock;
-import frc.robot.hijackablemovement.Joystick;
-import frc.robot.hijackablemovement.MovementSource;
-import frc.robot.commands.IntakeNote;
+import frc.robot.subsystems.LEDSubsystem;
+import frc.robot.commands.ArmCommand;
+import frc.robot.commands.CombinedAimAndRangeCommand;
+import frc.robot.commands.IntakeCommand;
+import frc.robot.commands.LimelightCommand;
+import frc.robot.commands.ManualArmControlCommand;
+import frc.robot.commands.ShooterCommand;
 
 /*
  * This class is where the bulk of the robot should be declared.  Since Command-based is a
@@ -67,7 +60,7 @@ public class RobotContainer {
 	private final ShooterSubsystem m_shooter = new ShooterSubsystem();
 	private final ArmSubsystem m_arm = new ArmSubsystem();
 	private final LimelightSubsystem m_limelight = new LimelightSubsystem();
-	private final LEDSubsystem m_led = new LEDSubsystem();
+	private final LEDSubsystem m_led = new LEDSubsystem(m_intake);
 
 
         // Commands
@@ -122,10 +115,6 @@ public class RobotContainer {
         // The operator's controller
         public static XboxController m_operatorController = new XboxController(OIConstants.kOperatorControllerPort);
 
-        private MovementSource hijackableRotation = new Joystick(); // get rotation from driver input;
-
-        private MovementSource hijackableTranslation = new Joystick();
-
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Command Groups
         // SequentialCommandGroup intake = new SequentialCommandGroup(
@@ -141,31 +130,25 @@ public class RobotContainer {
                 configureButtonBindings();
 
                 // Register named commands for PathPlanner GUI
-                NamedCommands.registerCommand("IntakeNote", intakeNoteCommand);
-                NamedCommands.registerCommand("AmpArm", ampArmCommand);
-                NamedCommands.registerCommand("ArmHome", armHomeCommand);
-                NamedCommands.registerCommand("ScoreSpeaker", scoreSpeakerCommand);
-                NamedCommands.registerCommand("ScoreSpeakerGroup", shootSpeakerParallelGroup);
-                NamedCommands.registerCommand("StartIntake", startIntakeCommand);
-                NamedCommands.registerCommand("StopIntake", stopIntakeCommand);
-                NamedCommands.registerCommand("StartShooter", startShooterCommand);
-                NamedCommands.registerCommand("StopShooter", stopShooterCommand);
-                NamedCommands.registerCommand("LobShooter", lobShooterCommand);
+                NamedCommands.registerCommand("Shooter", shooterCommand);
+                NamedCommands.registerCommand("Intake", forwardIntakeCommand);
+      
                 // set default arm command
-                m_arm.setDefaultCommand(m_armControlCommand);
+                m_arm.setDefaultCommand(armCommand);
 
                 // Configure default commands
                 // The left stick controls translation of the robot.
                 // Turning is controlled by the X axis of the right stick.
                 m_robotDrive.setDefaultCommand(
-                                new RunCommand(() -> m_robotDrive.drive(
-                                                hijackableTranslation.getXSpeed(), // * 0.95
-                                                -MathUtil.applyDeadband(m_driverController.getLeftX(),
-                                                                OIConstants.kDriveDeadband), // * 0.95
-                                                // -MathUtil.applyDeadband( m_driverController.getRightX(),
-                                                // OIConstants.kDriveDeadband), // * 0.95
-                                                hijackableRotation.getR(), // * 0.95
-                                                isFieldRelative, true), m_robotDrive));
+    new RunCommand(() -> m_robotDrive.drive(
+        -MathUtil.applyDeadband(m_driverController.getLeftY(), OIConstants.kDriveDeadband), // Translation Y
+        -MathUtil.applyDeadband(m_driverController.getLeftX(), OIConstants.kDriveDeadband), // Translation X
+        -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband), // Rotation
+        isFieldRelative, true), // Field-relative control
+        m_robotDrive)
+);
+
+
 
                 // set the arm subsystem to run the "runAutomatic" function continuously when no
                 // other command
@@ -223,12 +206,9 @@ public class RobotContainer {
                 // Pressing the 'A' button will initiate rotation of the robot to align with
                 // April tag using LL data
                 new JoystickButton(m_driverController, Button.kA.value)
-                                .onTrue(new InstantCommand(() -> hijackableRotation = new AprilTagLock()))
-                                .onTrue(new InstantCommand(() -> hijackableTranslation = new AprilTagLock()))
-                                .onTrue(new InstantCommand(() -> isFieldRelative = false))
-                                .onFalse(new InstantCommand(() -> hijackableRotation = new Joystick()))
-                                .onFalse(new InstantCommand(() -> hijackableTranslation = new Joystick()))
-                                .onFalse(new InstantCommand(() -> isFieldRelative = true));
+                        .onTrue(new CombinedAimAndRangeCommand(m_limelight, m_robotDrive, m_shooter)) // Engage auto aim and range
+                        .onFalse(new InstantCommand(() -> isFieldRelative = true)); // Reset field-relative control on release
+            
 
                 // Hold the left bumper to enable low speed mode when crossing the field
                 // (currently: 2.5)
@@ -242,41 +222,25 @@ public class RobotContainer {
 
                 // Ring Intake In on floor
                 new JoystickButton(m_operatorController, Button.kRightBumper.value)
-                                .onTrue(new InstantCommand(() -> m_intake.startIntake(), m_intake))
+                                .onTrue(new InstantCommand(() -> m_intake.runIntakeAtCurrent(1), m_intake))
                                 .onFalse(new InstantCommand(() -> m_intake.stopIntake(), m_intake));
                 // Reverse Intake
                 new JoystickButton(m_operatorController, Button.kLeftBumper.value)
-                                .onTrue(new InstantCommand(() -> m_intake.reverseIntake(), m_intake))
+                                .onTrue(new InstantCommand(() -> m_intake.runIntakeAtCurrent(1), m_intake))
                                 .onFalse(new InstantCommand(() -> m_intake.stopIntake(), m_intake));
 
                 // Shoot ring into speaker (pew pew!)
                 new JoystickButton(m_operatorController, Button.kA.value)
-                                .onTrue(new InstantCommand(() -> m_shooter.startShooter(), m_shooter))
+                                .onTrue(new InstantCommand(() -> m_shooter.setShooterVelocity(1), m_shooter))
                                 .onFalse(new InstantCommand(() -> m_shooter.stopShooter(), m_shooter));
 
                 // Reverse shooters (anti-pew pew!)
                 new JoystickButton(m_operatorController, Button.kB.value)
-                                .onTrue(new InstantCommand(() -> m_shooter.reverseShooter(), m_shooter))
+                                .onTrue(new InstantCommand(() -> m_shooter.setShooterVelocity(1), m_shooter))
                                 .onFalse(new InstantCommand(() -> m_shooter.stopShooter(), m_shooter));
 
                 new JoystickButton(m_operatorController, Button.kX.value)
                                 .onTrue(new InstantCommand(() -> m_intake.resetEncoders(), m_intake));
-
-                new JoystickButton(m_operatorController, Button.kY.value)
-                                .onTrue(new InstantCommand(() -> m_shooter.startShooterLob(), m_shooter))
-                                .onFalse(new InstantCommand(() -> m_shooter.stopShooter(), m_shooter));
-
-                // set up arm preset positions
-                // new JoystickButton(m_operatorController, XboxController.Button.kY.value)
-                // .onTrue(new InstantCommand(() -> m_arm
-                // .setTargetPosition(Constants.ArmConstants.kScoringPosition)));
-                // new JoystickButton(m_operatorController, XboxController.Button.kX.value)
-                // .onTrue(new InstantCommand(
-                // () -> m_arm.setTargetPosition(Constants.ArmConstants.kHomePosition)));
-
-                // Operator Arm control - Right trigger = deploy ; Left trigger = retract
-
-                // SmartDashboard.putData("Test", new PathPlannerAuto("Test"));
 
         }
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -299,7 +263,7 @@ public class RobotContainer {
     	}
 
     	Pose2d startingPose = PathPlannerAuto.getStaringPoseFromAutoFile(autoChooser.getSelected());
-    	if (DriverStation.getAlliance() == DriverStation.Alliance.Blue) {
+    	if (DriverStation.getAlliance().get() == DriverStation.Alliance.Blue) {
         m_robotDrive.resetOdometry(startingPose);
     	} else {
         Translation2d flippedTranslation = GeometryUtil.flipFieldPosition(startingPose.getTranslation());
@@ -311,70 +275,5 @@ public class RobotContainer {
 }
 
 
-        // public Command getAutonomousCommand() {
-        // return autoChooser.getSelected();
-        // }
-
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // The trajectory / auto paths below are the example trajectories included with
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////////// the
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////////// Rev
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////////// MAXSwerve
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////////// code
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////////// template
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////////// (unused)
-
-        // // Create config for trajectory
-        // TrajectoryConfig config = new TrajectoryConfig(
-        // AutoConstants.kMaxSpeedMetersPerSecond,
-        // AutoConstants.kMaxAccelerationMetersPerSecondSquared)
-        // // Add kinematics to ensure max speed is actually obeyed
-        // .setKinematics(DriveConstants.kDriveKinematics);
-
-        // // An example trajectory to follow. All units in meters.
-        // Trajectory exampleTrajectory = TrajectoryGenerator.generateTrajectory(
-        // // Start at the origin facing the +X direction
-        // new Pose2d(0, 0, new Rotation2d(0)),
-        // // Pass through these two interior waypoints, making an 's' curve path
-        // List.of(new Translation2d(1, 1), new Translation2d(2, -1)),
-        // // End 3 meters straight ahead of where we started, facing forward
-        // new Pose2d(3, 0, new Rotation2d(0)),
-        // config);
-        //
-        // var thetaController = new ProfiledPIDController(
-        // AutoConstants.kPThetaController, 0, 0,
-        // AutoConstants.kThetaControllerConstraints);
-        // thetaController.enableContinuousInput(-Math.PI, Math.PI);
-
-        // SwerveControllerCommand swerveControllerCommand = new
-        // SwerveControllerCommand(
-        // exampleTrajectory,
-        // m_robotDrive::getPose, // Functional interface to feed supplier
-        // DriveConstants.kDriveKinematics,
-
-        // // Position controllers
-        // new PIDController(AutoConstants.kPXController, 0, 0),
-        // new PIDController(AutoConstants.kPYController, 0, 0),
-        // thetaController,
-        // m_robotDrive::setModuleStates,
-        // m_robotDrive);
-
-        // // // Reset odometry to the starting pose of the trajectory.
-        // m_robotDrive.resetOdometry(exampleTrajectory.getInitialPose());
-
-        // // Run path following command, then stop at the end.
-        // return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0,
-        // false, false));
-
-        // Load the path you want to follow using its name in the GUI
-        // PathPlannerPath path = PathPlannerPath.fromPathFile("Path");
-
-        // Create a path following command using AutoBuilder. This will also trigger
-        // event markers.
-
-        // Resets the robotOdometry to the currently selected path in the chooser
-        // If blue, odometry will be reset to starting pose of the path
-        // Else if red, odometry will be reset to the flipped starting pose of the blue
-        // path
 
 }

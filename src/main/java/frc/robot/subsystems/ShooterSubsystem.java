@@ -25,10 +25,11 @@ package frc.robot.subsystems;
  * - Parameterized motor speeds for improved flexibility and adaptability.
  */
 
+import frc.robot.Constants;
 import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import com.revrobotics.CANSparkLowLevel.MotorType;
 import com.revrobotics.RelativeEncoder;
-import com.revrobotics.SparkMaxPIDController;
+import com.revrobotics.SparkPIDController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -37,8 +38,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private final CANSparkMax rightShooterMotor;
     private final RelativeEncoder leftShooterEncoder;
     private final RelativeEncoder rightShooterEncoder;
-    private final SparkMaxPIDController leftPIDController;
-    private final SparkMaxPIDController rightPIDController;
+    private final SparkPIDController leftPIDController;
+    private final SparkPIDController rightPIDController;
 
     // PID coefficients
     private static final double kP = 0.1, kI = 0.0, kD = 0.0, kFF = 0.00015;
@@ -59,7 +60,7 @@ public class ShooterSubsystem extends SubsystemBase {
         resetEncoders();
     }
 
-    private void configureMotor(CANSparkMax motor, SparkMaxPIDController pidController) {
+    private void configureMotor(CANSparkMax motor, SparkPIDController pidController) {
         motor.restoreFactoryDefaults();
         motor.setIdleMode(CANSparkMax.IdleMode.kBrake);
         motor.setSmartCurrentLimit(Constants.ShooterConstants.kShooterMotorCurrentLimit);
@@ -105,6 +106,20 @@ public class ShooterSubsystem extends SubsystemBase {
         return (leftShooterEncoder.getVelocity() + rightShooterEncoder.getVelocity()) / 2.0;
     }
 
+    public double calculateRPMFromDistance(double distance) {
+        // Example formula: Linear interpolation or empirical testing values
+        double minRPM = 3000; // Example: Minimum RPM
+        double maxRPM = 5000; // Example: Maximum RPM
+        double minDistance = 1.0; // Minimum effective distance (in meters)
+        double maxDistance = 5.0; // Maximum effective distance (in meters)
+
+        // Ensure distance is within the expected range
+        distance = Math.max(minDistance, Math.min(maxDistance, distance));
+
+        // Interpolate RPM based on distance
+        return minRPM + (distance - minDistance) * (maxRPM - minRPM) / (maxDistance - minDistance);
+    }
+    
     public boolean autoShooter(double targetRPM, double durationSeconds) {
         // Non-blocking autonomous shooter logic
         setShooterVelocity(targetRPM);

@@ -4,6 +4,7 @@ import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
+import frc.robot.Constants;
 
 public class CombinedAimAndRangeCommand extends CommandBase {
 
@@ -33,19 +34,19 @@ public class CombinedAimAndRangeCommand extends CommandBase {
         // Aiming: Adjust robot heading based on tx
         double tx = limelightSubsystem.getTx();
         if (Math.abs(tx) > Constants.LimelightConstants.kAimTolerance) {
-            driveSubsystem.drive(0, 0, -Math.signum(tx) * Constants.LimelightConstants.kAimSpeed, true);
+            driveSubsystem.drive(0, 0, -Math.signum(tx) * Constants.LimelightConstants.kAimSpeed, false, true);
         } else {
             isAligned = true;
-            driveSubsystem.drive(0, 0, 0, true);
+            driveSubsystem.drive(0, 0, 0, false, true);
         }
 
         // Ranging: Adjust shooter parameters based on distance
-        if (limelightSubsystem.hasTarget() && isAligned) {
-            double distance = limelightSubsystem.getDistance();
-            double targetRPM = ShooterSubsystem.calculateRPMFromDistance(distance); // Implement this method in ShooterSubsystem
-            shooterSubsystem.setShooterVelocity(targetRPM);
-            isRanged = true;
-        }
+        double distance = limelightSubsystem.getDistance(); // Example: Get distance from Limelight
+        double targetRPM = shooterSubsystem.calculateRPMFromDistance(distance);
+        
+        shooterSubsystem.setShooterVelocity(targetRPM); // Set shooter speed based on distance
+        
+        
     }
 
     @Override
@@ -55,7 +56,7 @@ public class CombinedAimAndRangeCommand extends CommandBase {
 
     @Override
     public void end(boolean interrupted) {
-        driveSubsystem.drive(0, 0, 0, true); // Stop movement
+        driveSubsystem.drive(0, 0, 0, false, true); // Stop movement
         limelightSubsystem.setLEDMode(Constants.LimelightConstants.kLEDOff); // Turn off LEDs
         if (interrupted) {
             shooterSubsystem.stopShooter(); // Stop shooter if command is interrupted

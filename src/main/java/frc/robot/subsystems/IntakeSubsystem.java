@@ -26,8 +26,9 @@ package frc.robot.subsystems;
  * - Refactored autonomous intake logic to be non-blocking, ensuring compatibility with the command-based scheduler.
  */
 
+import frc.robot.Constants;
 import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import com.revrobotics.CANSparkLowLevel.MotorType;
 import com.revrobotics.RelativeEncoder;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;

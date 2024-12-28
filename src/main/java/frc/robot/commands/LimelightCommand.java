@@ -18,6 +18,7 @@ package frc.robot.commands;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
+import frc.robot.Constants;
 
 public class LimelightCommand extends CommandBase {
     private final LimelightSubsystem limelightSubsystem;
@@ -40,9 +41,9 @@ public class LimelightCommand extends CommandBase {
         // Align the robot using the Limelight's tx value
         double tx = limelightSubsystem.getTx();
         if (Math.abs(tx) > Constants.LimelightConstants.kAimTolerance) {
-            driveSubsystem.drive(0, 0, -Math.signum(tx) * Constants.LimelightConstants.kAimSpeed, true); // Adjust speed here
+            driveSubsystem.drive(0, 0, -Math.signum(tx) * Constants.LimelightConstants.kAimSpeed, true, true); // Adjust speed here
         } else {
-            driveSubsystem.drive(0, 0, 0, true); // Stop rotation when aligned
+            driveSubsystem.drive(0, 0, 0, true, true); // Stop rotation when aligned
         }
     }
 
@@ -50,7 +51,7 @@ public class LimelightCommand extends CommandBase {
     public void end(boolean interrupted) {
         // Turn off Limelight LEDs and stop robot movement
         limelightSubsystem.setLEDMode(Constants.LimelightConstants.kLEDOff);
-        driveSubsystem.drive(0, 0, 0, true);
+        driveSubsystem.drive(0, 0, 0, true, true);
     }
 
     @Override

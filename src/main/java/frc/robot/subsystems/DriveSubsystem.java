@@ -58,10 +58,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class DriveSubsystem extends SubsystemBase {
     // This class handles the robot's swerve drive functionality, including odometry and movement.
-
   private final MAXSwerveModule[] swerveModules;
   private SwerveModulePosition[] swerveModulePositions;
-
   private double maxSpeedMPS = Constants.DriveConstants.kMaxSpeedMetersPerSecond;
 
   // Create MAXSwerveModules
